@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Моё радио">
-<title>Моё радио</title>
+<meta name="apple-mobile-web-app-title" content="Playlist FM">
+<title>Playlist FM</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff4d6d'/%3E%3Cstop offset='1' stop-color='%23ff9f43'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='34' r='9' fill='none' stroke='white' stroke-width='5'/%3E%3Cpath d='M16 20a22 22 0 0 1 32 0M10 13a31 31 0 0 1 44 0' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23ff4d6d'/%3E%3Ccircle cx='32' cy='34' r='9' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
 <style>
@@ -30,6 +30,7 @@
     background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px rgba(255,77,109,.35)}
   .logo svg{width:28px;height:28px}
   h1{font-size:22px;margin:0;letter-spacing:-.01em}
+  h1 .fm{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
   .sub{margin:2px 0 0;color:var(--muted);font-size:14px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
   h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
@@ -98,7 +99,7 @@
   <header>
     <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="3.2"/><path d="M6.5 8.5a8 8 0 0 1 11 0M3.8 5.6a12 12 0 0 1 16.4 0"/></svg></div>
     <div>
-      <h1>Моё радио</h1>
+      <h1>Playlist <span class="fm">FM</span></h1>
       <p class="sub">Вставь ссылку на плейлист — ведущий сделает остальное</p>
     </div>
   </header>
@@ -170,11 +171,23 @@
 
   <section class="card">
     <h2>Ведущий</h2>
-    <div class="field">
-      <label for="voice">Голос</label>
+    <div class="seg" id="engineSeg" style="margin-top:0">
+      <button data-engine="neural">Нейроголос</button>
+      <button data-engine="device">Голос устройства</button>
+    </div>
+    <div class="field" id="neuralBox">
+      <label for="nvoice">Нейроголос</label>
+      <div class="row">
+        <select id="nvoice"></select>
+        <button id="testVoice" class="btn ghost small">Прослушать</button>
+      </div>
+      <p id="nvoiceHint" class="hint">Голос скачивается один раз (около 60 МБ) и дальше работает прямо в браузере — бесплатно и без ключей.</p>
+    </div>
+    <div class="field" id="deviceBox" hidden>
+      <label for="voice">Голос устройства</label>
       <div class="row">
         <select id="voice"></select>
-        <button id="testVoice" class="btn ghost small">Прослушать</button>
+        <button id="testVoice2" class="btn ghost small">Прослушать</button>
       </div>
       <p id="voiceHint" class="hint"></p>
     </div>
@@ -200,10 +213,10 @@
       <summary>Подсказки</summary>
       <ul>
         <li><b>Телефон:</b> держи эту страницу открытой — экран не будет гаснуть, пока играет радио. Если свернуть браузер, ведущий замолчит.</li>
-        <li><b>Spotify на телефоне:</b> сначала открой приложение Spotify и включи любой трек на пару секунд — тогда телефон появится в списке устройств.</li>
+        <li><b>Spotify без приложения:</b> на компьютере в Chrome, Edge или Opera выбери в списке устройств «Этот браузер» — музыка будет играть прямо на сайте. На телефоне Spotify так не разрешает: там нужно приложение Spotify (открой его и включи любой трек на пару секунд). YouTube и SoundCloud играют прямо на сайте везде.</li>
         <li><b>Spotify:</b> читаются только плейлисты, которые ты создал сам или где ты соавтор (ограничение Spotify).</li>
         <li><b>YouTube:</b> плеер берёт до 200 видео из плейлиста; видео, которые запрещено встраивать, пропускаются. На iPhone иногда нужно один раз нажать ▶ в самом видео.</li>
-        <li><b>Живой голос бесплатно:</b> на компьютере открой сайт в Microsoft Edge и выбери голос с пометкой «Online (Natural)». На iPhone: Настройки → Универсальный доступ → Устный контент → Голоса → Русский → скачай улучшенный голос.</li>
+        <li><b>Нейроголос</b> скачивается один раз на каждое устройство и хранится в браузере. На телефоне лучше первый раз скачать по Wi-Fi.</li>
       </ul>
       <p><button id="spLogout" class="link" hidden>Выйти из Spotify</button></p>
     </details>
@@ -251,9 +264,9 @@ const PLACEHOLDER_ART = "data:image/svg+xml," + encodeURIComponent(
 
 /* ================== ТЕКСТЫ ВЕДУЩЕГО ================== */
 const HELLO = [
-  "Привет! В эфире радио по вашему плейлисту «{playlist}». Устраивайтесь поудобнее, начинаем.",
-  "Добрый день! Это ваше личное радио, и сегодня в эфире плейлист «{playlist}». Поехали!",
-  "Привет-привет! С вами ваше радио. Сегодня звучит «{playlist}». Включаем!",
+  "Привет! Вы слушаете Playlist FM. Сегодня в эфире плейлист «{playlist}». Устраивайтесь поудобнее, начинаем.",
+  "Добрый день! Это Playlist FM, и сегодня у нас в эфире «{playlist}». Поехали!",
+  "Привет-привет! С вами Playlist FM. Сегодня звучит «{playlist}». Включаем!",
 ];
 const BACK = [
   "Это был {artist} — «{name}».",
@@ -270,12 +283,12 @@ const INTRO = [
 const INTRO_NOART = ["Дальше в эфире — «{name}».", "А сейчас звучит «{name}»."];
 const INTRO_UNKNOWN = ["А теперь — следующий трек.", "Слушаем дальше.", "Продолжаем эфир."];
 const CHAT = [
-  "Вы слушаете радио по вашему личному плейлисту. Никакой рекламы, только ваша музыка.",
+  "Вы слушаете Playlist FM. Никакой рекламы, только ваша музыка.",
   "Если вы только что подключились — добро пожаловать, тут у нас хорошая музыка.",
   "Небольшая пауза, чтобы перевести дух. И продолжаем.",
   "Самое время сделать погромче. Сейчас будет повод.",
 ];
-const BYE = "Это был последний трек в плейлисте. Спасибо, что слушали! До встречи в эфире.";
+const BYE = "Это был последний трек в плейлисте. Спасибо, что слушали Playlist FM! До встречи в эфире.";
 
 function cleanTitle(t) {
   if (!t) return "";
@@ -296,8 +309,8 @@ const artistsText = a => (a || []).filter(Boolean).slice(0, 2).join(" и ");
 function factLine(t) {
   const album = cleanTitle(t.album || "");
   if (album && t.albumType === "album" && album.toLowerCase() !== cleanTitle(t.title).toLowerCase())
-    return `Трек с альбома «${album}»` + (t.year ? ` ${t.year} года.` : ".");
-  if (t.year) return `Песня вышла в ${t.year} году.`;
+    return `Это трек с альбома «${album}».` + (t.year ? ` Год выпуска — ${t.year}.` : "");
+  if (t.year) return `Год выпуска — ${t.year}.`;
   return "";
 }
 function hostLine(n, t, prev, talkEvery) {
@@ -349,6 +362,8 @@ function detect(raw) {
 
 /* ================== ГОЛОС ВЕДУЩЕГО ================== */
 const settings = {
+  engine: store.get("engine", "neural"),
+  nvoice: store.get("nvoice", "ru_RU-irina-medium"),
   mode: store.get("mode", "order"),
   voice: store.get("voice", ""),
   rate: store.get("rate", 1.05),
@@ -388,22 +403,132 @@ function populateVoices() {
     hasRu ? "Голоса берутся из твоего устройства. Самые живые обычно с пометкой Natural, Online или «улучшенный»."
           : "На этом устройстве нет русского голоса — ведущий будет говорить с акцентом. Подсказка внизу страницы.";
 }
-function speak(text) {
+function speakDevice(text) {
   return new Promise(resolve => {
     if (!text || !("speechSynthesis" in window)) return resolve();
-    $("onair").hidden = false; $("onairText").textContent = text;
     const u = new SpeechSynthesisUtterance(text);
     const v = voices.find(v => v.name === $("voice").value);
     if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "ru-RU";
     u.rate = +settings.rate || 1;
     let done = false;
-    const finish = () => { if (done) return; done = true; clearTimeout(timer); $("onair").hidden = true; resolve(); };
+    const finish = () => { if (done) return; done = true; clearTimeout(timer); resolve(); };
     const timer = setTimeout(finish, 5000 + text.length * 140 / (u.rate || 1));
     u.onend = finish; u.onerror = finish;
     currentUtterance = u; // иначе Chrome может «потерять» фразу
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
   });
+}
+
+
+/* ================== НЕЙРОГОЛОС (Piper, работает прямо в браузере) ================== */
+const PIPER_LIB = "https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm";
+const PIPER_NAMES = {
+  "ru_RU-irina-medium": "Ирина — женский",
+  "ru_RU-ruslan-medium": "Руслан — мужской",
+  "ru_RU-denis-medium": "Денис — мужской",
+  "ru_RU-dmitri-medium": "Дмитрий — мужской",
+  "uk_UA-ukrainian_tts-medium": "Український голос",
+  "uk_UA-lada-x_low": "Лада — українська",
+};
+function nvHint(t) { $("nvoiceHint").textContent = t; }
+const PIPER = {
+  lib: null, loading: null, stored: new Set(), queue: Promise.resolve(),
+  load() {
+    if (!this.loading) this.loading = import(PIPER_LIB).then(m => (this.lib = m))
+      .catch(() => { this.loading = null; throw new Error("не удалось загрузить нейроголос — проверь интернет"); });
+    return this.loading;
+  },
+  async list() {
+    const t = await this.load();
+    const v = await t.voices();
+    const keys = Array.isArray(v) ? v.map(x => (typeof x === "string" ? x : x.key || x.id || x.name)) : Object.keys(v || {});
+    return keys.filter(k => /^(ru_RU|uk_UA)-/.test(k));
+  },
+  async refreshStored() { try { const t = await this.load(); (await t.stored() || []).forEach(id => this.stored.add(id)); } catch {} },
+  async ensure(id) {
+    const t = await this.load();
+    if (this.stored.has(id)) return;
+    await this.refreshStored();
+    if (this.stored.has(id)) return;
+    nvHint("Скачиваю голос… это один раз, около 60 МБ");
+    await t.download(id, p => { if (p && p.total) nvHint(`Скачиваю голос… ${Math.round(p.loaded / p.total * 100)}%`); });
+    this.stored.add(id);
+    nvHint("Голос скачан и сохранён в браузере ✓");
+  },
+  synth(text) {
+    const id = settings.nvoice;
+    const run = this.queue.then(async () => {
+      await this.ensure(id);
+      return await this.lib.predict({ text: prepForPiper(text), voiceId: id });
+    });
+    this.queue = run.catch(() => {});
+    return run;
+  },
+};
+function prepForPiper(t) { return t.replace(/[«»"“”]/g, "").replace(/\s+[—–]\s+/g, ", ").replace(/[’`]/g, "'"); }
+
+const voiceAudio = new Audio();
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+let voiceStop = null;
+let speechGen = 0;
+function unlockAudio() { try { voiceAudio.src = SILENT_WAV; const p = voiceAudio.play(); if (p) p.catch(() => {}); } catch {} }
+function playBlob(blob) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(blob);
+    let done = false;
+    const fin = () => { if (done) return; done = true; voiceStop = null; voiceAudio.onended = voiceAudio.onerror = null; URL.revokeObjectURL(url); resolve(); };
+    voiceStop = () => { try { voiceAudio.pause(); } catch {} fin(); };
+    voiceAudio.onended = fin; voiceAudio.onerror = fin;
+    voiceAudio.src = url;
+    voiceAudio.playbackRate = +settings.rate || 1;
+    const p = voiceAudio.play(); if (p) p.catch(fin);
+  });
+}
+function cancelSpeech() {
+  speechGen++;
+  if (voiceStop) voiceStop();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  $("onair").hidden = true;
+}
+function synthAhead(text) { return settings.engine === "neural" ? PIPER.synth(text).catch(() => null) : null; }
+async function speak(text, pre) {
+  if (!text) return;
+  const gen = speechGen;
+  $("onair").hidden = false; $("onairText").textContent = text;
+  try {
+    if (settings.engine === "neural") {
+      let blob = null;
+      try { blob = pre ? await pre : await PIPER.synth(text); }
+      catch (e) { status("Нейроголос не сработал: " + e.message + ". Говорю голосом устройства."); }
+      if (gen !== speechGen) return; // пока готовили речь, нажали «стоп» или «дальше»
+      if (blob) { await playBlob(blob); return; }
+    }
+    await speakDevice(text);
+  } finally { $("onair").hidden = true; }
+}
+async function initNeuralVoices() {
+  const sel = $("nvoice");
+  if (!sel.options.length) {
+    for (const id of Object.keys(PIPER_NAMES).filter(k => k.startsWith("ru_RU"))) sel.add(new Option(PIPER_NAMES[id], id));
+    sel.value = settings.nvoice;
+  }
+  try {
+    const all = await PIPER.list();
+    for (const o of [...sel.options]) if (!all.includes(o.value)) o.remove();
+    for (const id of all) if (![...sel.options].some(o => o.value === id)) sel.add(new Option(PIPER_NAMES[id] || id, id));
+    if (![...sel.options].some(o => o.value === settings.nvoice) && sel.options.length) { settings.nvoice = sel.options[0].value; store.set("nvoice", settings.nvoice); }
+    sel.value = settings.nvoice;
+    await PIPER.refreshStored();
+    nvHint(PIPER.stored.has(settings.nvoice) ? "Голос уже скачан ✓ Работает прямо в браузере, бесплатно."
+      : "Голос скачается при первом запуске (около 60 МБ, один раз) и дальше работает прямо в браузере — бесплатно и без ключей.");
+  } catch (e) { nvHint("Нейроголоса пока не загрузились — проверь интернет и обнови страницу. Пока можно выбрать «Голос устройства»."); }
+}
+function setEngine(e) {
+  settings.engine = e; store.set("engine", e);
+  document.querySelectorAll("#engineSeg button").forEach(b => b.classList.toggle("on", b.dataset.engine === e));
+  $("neuralBox").hidden = e !== "neural"; $("deviceBox").hidden = e !== "device";
+  if (e === "neural") initNeuralVoices();
 }
 
 /* ================== SPOTIFY ================== */
@@ -518,7 +643,7 @@ const SP = {
     this.sdkLoading = true;
     window.onSpotifyWebPlaybackSDKReady = () => {
       const p = new Spotify.Player({
-        name: "Моё радио (браузер)", volume: 0.85,
+        name: "Playlist FM (браузер)", volume: 0.85,
         getOAuthToken: cb => this.getToken().then(cb).catch(() => {}),
       });
       p.addListener("ready", ({ device_id }) => { this.sdkDevice = device_id; refreshDevices(); });
@@ -583,7 +708,7 @@ async function refreshDevices() {
   sel.innerHTML = "";
   for (const o of opts) sel.add(new Option(o.name + (o.active ? " • сейчас играет" : ""), o.id));
   const byName = opts.find(o => o.name === prevName);
-  const choice = byName || opts.find(o => o.active) || opts[0];
+  const choice = byName || (SP.sdkDevice ? opts[0] : null) || opts.find(o => o.active) || opts[0];
   if (choice) sel.value = choice.id;
   $("devHint").textContent = opts.length ? "" : (isMobile
     ? "Открой приложение Spotify, включи любой трек на пару секунд, вернись сюда и нажми ↻."
@@ -768,19 +893,35 @@ function updateButtons() {
 }
 async function waitWhilePaused(stop) { while (S.paused && !stop()) await sleep(250); }
 
+function prepareLine(idx, n, prev) {
+  const t = S.tracks[idx];
+  if (!t) return null;
+  const job = { idx, prev };
+  job.ready = (async () => {
+    try { await S.adapter.prepare?.(t); } catch {}
+    job.text = hostLine(n, t, prev, +settings.talkEvery);
+    job.pre = synthAhead(job.text);
+  })();
+  return job;
+}
 async function runRadio(my) {
   const stop = () => my !== S.session;
-  const hello = speak(fmt(pick(HELLO), { playlist: S.name })); // запускаем в момент нажатия — так браузер разрешает звук
+  const helloText = fmt(pick(HELLO), { playlist: S.name });
+  const hello = speak(helloText); // запускаем сразу после нажатия — так браузер разрешает звук
   S.adapter.pause?.();
+  let job = S.queue.length ? prepareLine(S.queue[0], S.count + 1, S.prev) : null;
   await hello;
   while (!stop() && S.queue.length) {
     const idx = S.queue.shift(); const t = S.tracks[idx]; S.current = idx; S.skip = false;
-    try { await S.adapter.prepare?.(t); } catch {}
-    showTrack(t, "Ведущий в эфире"); updateUpNext();
     S.count++;
+    let line, pre = null;
+    if (job && job.idx === idx && job.prev === S.prev) { await job.ready; line = job.text; pre = job.pre; }
+    else { try { await S.adapter.prepare?.(t); } catch {} line = hostLine(S.count, t, S.prev, +settings.talkEvery); }
+    job = null;
+    showTrack(t, "Ведущий в эфире"); updateUpNext();
     await waitWhilePaused(stop);
     if (stop()) break;
-    await speak(hostLine(S.count, t, S.prev, +settings.talkEvery));
+    await speak(line, pre);
     await waitWhilePaused(stop);
     if (stop()) break;
     try { await S.adapter.play(t); }
@@ -791,6 +932,8 @@ async function runRadio(my) {
       continue;
     }
     showTrack(t, "Сейчас звучит"); updateUpNext();
+    // пока играет трек — заранее готовим следующую подводку
+    if (S.queue.length) job = prepareLine(S.queue[0], S.count + 1, t);
     S.inTrack = true;
     await S.adapter.waitEnd(t, () => stop() || S.skip);
     S.inTrack = false;
@@ -800,7 +943,7 @@ async function runRadio(my) {
     S.prev = t;
   }
   if (!stop()) {
-    await speak(BYE);
+    await speak(BYE, synthAhead(BYE));
     S.running = false; S.paused = false; updateButtons(); keepAwake(false);
     showTrack(null, "Эфир окончен");
   }
@@ -808,6 +951,7 @@ async function runRadio(my) {
 function startRadio() {
   if (!S.tracks.length || !S.adapter) return;
   if (!S.queue.length) { S.played.clear(); S.count = 0; S.prev = null; buildQueue(); }
+  unlockAudio();
   if (S.adapter === SP) SP.player?.activateElement?.().catch?.(() => {});
   S.running = true; S.paused = false; updateButtons(); status("");
   keepAwake(true);
@@ -815,8 +959,7 @@ function startRadio() {
 }
 function stopRadio() {
   S.session++; S.running = false; S.paused = false; S.inTrack = false;
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
-  $("onair").hidden = true;
+  cancelSpeech();
   S.adapter?.pause?.();
   updateButtons(); keepAwake(false);
   if (S.current >= 0 && !S.played.has(S.current)) S.queue.unshift(S.current);
@@ -827,9 +970,11 @@ async function togglePause() {
   S.paused = !S.paused; updateButtons();
   if (S.paused) {
     if ("speechSynthesis" in window && speechSynthesis.speaking) speechSynthesis.pause();
+    if (voiceStop && !voiceAudio.paused) voiceAudio.pause();
     if (S.inTrack) await S.adapter.pause?.();
   } else {
     if ("speechSynthesis" in window && speechSynthesis.paused) speechSynthesis.resume();
+    if (voiceStop && voiceAudio.paused) voiceAudio.play().catch(() => {});
     if (S.inTrack) await S.adapter.resume?.();
   }
 }
@@ -837,7 +982,7 @@ function nextTrack() {
   if (!S.running) return;
   S.paused = false; updateButtons();
   S.skip = true;
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  cancelSpeech();
 }
 
 async function loadLink() {
@@ -892,6 +1037,7 @@ function setMode(m) {
 (async function init() {
   $("link").value = store.get("link", "");
   setMode(settings.mode);
+  setEngine(settings.engine);
   $("rate").value = settings.rate; $("rateVal").textContent = (+settings.rate).toFixed(2) + "×";
   $("talkEvery").value = String(settings.talkEvery);
   $("art").src = PLACEHOLDER_ART;
@@ -909,7 +1055,11 @@ function setMode(m) {
   $("voice").onchange = () => { settings.voice = $("voice").value; store.set("voice", settings.voice); };
   $("rate").oninput = () => { settings.rate = +$("rate").value; store.set("rate", settings.rate); $("rateVal").textContent = settings.rate.toFixed(2) + "×"; };
   $("talkEvery").onchange = () => { settings.talkEvery = +$("talkEvery").value; store.set("talkEvery", settings.talkEvery); };
-  $("testVoice").onclick = () => speak("Привет! Это ваше радио. Дальше в эфире — Банд'Эрос, трек «Коламбия Пикчерз не представляет».");
+  const SAMPLE = "Привет! Это Playlist FM. Дальше в эфире — Three Days Grace, трек «Home». А после него — Банд'Эрос, «Коламбия Пикчерз не представляет».";
+  $("testVoice").onclick = () => { unlockAudio(); cancelSpeech(); speak(SAMPLE); };
+  $("testVoice2").onclick = () => { cancelSpeech(); speak(SAMPLE); };
+  document.querySelectorAll("#engineSeg button").forEach(b => b.onclick = () => { cancelSpeech(); setEngine(b.dataset.engine); });
+  $("nvoice").onchange = () => { settings.nvoice = $("nvoice").value; store.set("nvoice", settings.nvoice); initNeuralVoices(); };
   $("devRefresh").onclick = refreshDevices;
   $("spDevice").onchange = () => store.set("sp_dev", $("spDevice").selectedOptions[0]?.text.replace(" • сейчас играет", "") || "");
 
