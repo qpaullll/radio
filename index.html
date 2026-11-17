@@ -229,6 +229,14 @@
       <input id="rate" type="range" min="0.7" max="1.4" step="0.05">
     </div>
     <div class="field">
+      <label for="speakMode">Когда говорит ведущий</label>
+      <select id="speakMode">
+        <option value="auto">Авто (на телефоне со Spotify — поверх музыки)</option>
+        <option value="pause">В паузе между треками</option>
+        <option value="over">Поверх начала трека, как на радио</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="talkEvery">Разговорные паузы</label>
       <select id="talkEvery">
         <option value="3">Каждые 3 трека</option>
@@ -412,6 +420,7 @@ const settings = {
   voice: store.get("voice", ""),
   rate: store.get("rate", 1.05),
   talkEvery: store.get("talkEvery", 4),
+  speakMode: store.get("speakMode", "auto"),
 };
 let voices = [];
 let currentUtterance = null;
@@ -705,7 +714,17 @@ const SP = {
     const dev = this.deviceId();
     if (!dev) { const e = new Error(isMobile ? "Открой приложение Spotify, включи любой трек на пару секунд и нажми ↻ рядом со списком устройств." : "Выбери, где играть музыку Spotify (список под кнопками)."); e.fatal = true; throw e; }
     for (let i = 0; i < 2; i++) {
-      try { await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT", body: { uris: [t.ref] } }); return; }
+      try {
+        await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT", body: { uris: [t.ref] } });
+        if (await this.verify(t)) { status(""); return; }
+        // устройство «проспало» команду (часто бывает с iPhone в фоне) — пробуем ещё раз
+        await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT", body: { uris: [t.ref] } });
+        if (await this.verify(t)) { status(""); return; }
+        status(isMobile
+          ? "Spotify на телефоне не запустил трек сам. Открой приложение Spotify и нажми там ▶ — радио продолжит само. Совет: выбери в настройках «Ведущий говорит: поверх начала трека»."
+          : "Устройство Spotify не запустило трек. Открой Spotify на нём и нажми ▶ — радио продолжит само.");
+        return;
+      }
       catch (e) {
         if (e.status === 404 && i === 0) { await sleep(1500); continue; }
         if (e.status === 404) { const er = new Error("Spotify не нашёл устройство. Открой Spotify на нём и нажми ↻."); er.fatal = true; throw er; }
@@ -713,6 +732,14 @@ const SP = {
         throw e;
       }
     }
+  },
+  async verify(t) {
+    for (let i = 0; i < 6; i++) {
+      await sleep(1000);
+      let pb = null; try { pb = await this.api("/me/player"); } catch {}
+      if (pb?.is_playing && pb.item) return true;
+    }
+    return false;
   },
   async pause() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/pause?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
   async resume() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
@@ -740,23 +767,33 @@ const SP = {
     }
   },
 };
+const DEV_TYPE = { computer: "компьютер", smartphone: "телефон", tablet: "планшет", speaker: "колонка", tv: "телевизор", avr: "ресивер", stb: "приставка", audiodongle: "Chromecast", gameconsole: "консоль", castvideo: "Chromecast", castaudio: "Chromecast", automobile: "машина" };
 async function refreshDevices() {
   if (!SP.token) return;
   const sel = $("spDevice");
   let list = [];
   try { list = (await SP.api("/me/player/devices"))?.devices || []; } catch {}
   const opts = [];
-  if (SP.sdkDevice) opts.push({ id: SP.sdkDevice, name: "Этот браузер" });
-  for (const d of list) if (d.id && d.id !== SP.sdkDevice) opts.push({ id: d.id, name: d.name, active: d.is_active });
+  if (SP.sdkDevice) opts.push({ id: SP.sdkDevice, name: "Этот браузер", label: "Этот браузер (без приложения Spotify)", type: "browser" });
+  for (const d of list) if (d.id && d.id !== SP.sdkDevice) {
+    const t = (d.type || "").toLowerCase();
+    opts.push({ id: d.id, name: d.name, type: t, active: d.is_active,
+      label: `${d.name} — ${DEV_TYPE[t] || t || "устройство"}` + (d.is_active ? " • сейчас играет" : "") });
+  }
   const prevName = store.get("sp_dev", "");
-  sel.innerHTML = "";
-  for (const o of opts) sel.add(new Option(o.name + (o.active ? " • сейчас играет" : ""), o.id));
   const byName = opts.find(o => o.name === prevName);
-  const choice = byName || (SP.sdkDevice ? opts[0] : null) || opts.find(o => o.active) || opts[0];
-  if (choice) sel.value = choice.id;
-  $("devHint").textContent = opts.length ? "" : (isMobile
-    ? "Открой приложение Spotify, включи любой трек на пару секунд, вернись сюда и нажми ↻."
-    : "Плеер в браузере загружается… Или открой приложение Spotify и нажми ↻.");
+  let choice = byName;
+  if (!choice && isMobile) choice = opts.find(o => o.type === "smartphone" || o.type === "tablet"); // на телефоне — только телефон
+  if (!choice && !isMobile) choice = opts.find(o => o.type === "browser") || opts.find(o => o.active) || opts.find(o => o.type === "computer") || opts[0];
+  sel.innerHTML = "";
+  if (!choice) sel.add(new Option(opts.length ? "— выбери, где играть —" : "— нет устройств —", ""));
+  for (const o of opts) sel.add(new Option(o.label, o.id));
+  sel.value = choice ? choice.id : "";
+  const phoneMissing = isMobile && !opts.some(o => o.type === "smartphone" || o.type === "tablet");
+  $("devHint").textContent = phoneMissing
+    ? "Телефона нет в списке: открой приложение Spotify на телефоне, включи любой трек на пару секунд, вернись сюда и нажми ↻. Без этого музыка заиграет на другом устройстве."
+    : !opts.length ? "Плеер в браузере загружается… Или открой приложение Spotify и нажми ↻."
+    : choice ? `Музыка будет играть: ${choice.label.replace(" • сейчас играет", "")}` : "";
 }
 
 /* ================== YOUTUBE ================== */
@@ -902,7 +939,11 @@ async function keepAwake(on) {
     else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
   } catch {}
 }
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && S.running) keepAwake(true); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (S.running) keepAwake(true);
+  else if (S.adapter === SP) refreshDevices();
+});
 
 function setProgress(pos, dur) {
   $("barFill").style.width = dur ? Math.min(100, pos / dur * 100) + "%" : "0";
@@ -939,6 +980,12 @@ function updateButtons() {
 }
 async function waitWhilePaused(stop) { while (S.paused && !stop()) await sleep(250); }
 
+// «поверх»: музыка не останавливается — ведущий говорит на фоне начала трека, как на настоящем радио.
+// На iPhone так надёжнее: Spotify в фоне не «засыпает» на паузе.
+function talkOver() { return settings.speakMode === "over" || (settings.speakMode === "auto" && isMobile && S.adapter === SP); }
+function setAudioSession(over) {
+  try { if (navigator.audioSession) navigator.audioSession.type = over ? "transient" : "auto"; } catch {}
+}
 function prepareLine(idx, n, prev) {
   const t = S.tracks[idx];
   if (!t) return null;
@@ -952,11 +999,14 @@ function prepareLine(idx, n, prev) {
 }
 async function runRadio(my) {
   const stop = () => my !== S.session;
+  const over = talkOver();
+  setAudioSession(over);
   const helloText = fmt(pick(HELLO), { playlist: S.name });
-  const hello = speak(helloText); // запускаем сразу после нажатия — так браузер разрешает звук
-  S.adapter.pause?.();
+  let hello = null;
+  if (!over) { hello = speak(helloText); S.adapter.pause?.(); } // голос сразу после нажатия — так браузер разрешает звук
   let job = S.queue.length ? prepareLine(S.queue[0], S.count + 1, S.prev) : null;
-  await hello;
+  if (hello) await hello;
+  let first = true;
   while (!stop() && S.queue.length) {
     const idx = S.queue.shift(); const t = S.tracks[idx]; S.current = idx; S.skip = false;
     S.count++;
@@ -964,12 +1014,14 @@ async function runRadio(my) {
     if (job && job.idx === idx && job.prev === S.prev) { await job.ready; line = job.text; pre = job.pre; }
     else { try { await S.adapter.prepare?.(t); } catch {} line = hostLine(S.count, t, S.prev, +settings.talkEvery); }
     job = null;
-    showTrack(t, "Ведущий в эфире"); updateUpNext();
+    showTrack(t, over ? "Сейчас звучит" : "Ведущий в эфире"); updateUpNext();
     await waitWhilePaused(stop);
     if (stop()) break;
-    await speak(line, pre);
-    await waitWhilePaused(stop);
-    if (stop()) break;
+    if (!over) {
+      await speak(line, pre);
+      await waitWhilePaused(stop);
+      if (stop()) break;
+    }
     try { await S.adapter.play(t); }
     catch (e) {
       S.played.add(idx);
@@ -978,6 +1030,11 @@ async function runRadio(my) {
       continue;
     }
     showTrack(t, "Сейчас звучит"); updateUpNext();
+    if (over) { // ведущий говорит поверх начала трека
+      const isFirst = first;
+      (async () => { if (isFirst) await speak(helloText); if (!stop()) await speak(line, pre); })();
+    }
+    first = false;
     // пока играет трек — заранее готовим следующую подводку
     if (S.queue.length) job = prepareLine(S.queue[0], S.count + 1, t);
     S.inTrack = true;
@@ -985,10 +1042,12 @@ async function runRadio(my) {
     S.inTrack = false;
     S.played.add(idx);
     if (stop()) break;
-    await S.adapter.pause?.();
+    if (!over) await S.adapter.pause?.();
+    else cancelSpeech();
     S.prev = t;
   }
   if (!stop()) {
+    if (over) await S.adapter.pause?.();
     await speak(BYE, synthAhead(BYE));
     S.running = false; S.paused = false; updateButtons(); keepAwake(false);
     showTrack(null, "Эфир окончен");
@@ -1098,6 +1157,8 @@ function setMode(m) {
   document.querySelectorAll("#themeSeg button").forEach(b => b.onclick = () => { store.set("themeMode", b.dataset.tmode); applyTheme(S.source); });
   $("rate").value = settings.rate; $("rateVal").textContent = (+settings.rate).toFixed(2) + "×";
   $("talkEvery").value = String(settings.talkEvery);
+  $("speakMode").value = settings.speakMode;
+  $("speakMode").onchange = () => { settings.speakMode = $("speakMode").value; store.set("speakMode", settings.speakMode); };
   $("art").src = placeholderArt();
   if ("speechSynthesis" in window) { populateVoices(); speechSynthesis.onvoiceschanged = populateVoices; } else populateVoices();
 
@@ -1119,7 +1180,12 @@ function setMode(m) {
   document.querySelectorAll("#engineSeg button").forEach(b => b.onclick = () => { cancelSpeech(); setEngine(b.dataset.engine); });
   $("nvoice").onchange = () => { settings.nvoice = $("nvoice").value; store.set("nvoice", settings.nvoice); initNeuralVoices(); };
   $("devRefresh").onclick = refreshDevices;
-  $("spDevice").onchange = () => store.set("sp_dev", $("spDevice").selectedOptions[0]?.text.replace(" • сейчас играет", "") || "");
+  $("spDevice").onchange = () => {
+    const o = $("spDevice").selectedOptions[0];
+    const name = o && o.value ? (o.value === SP.sdkDevice ? "Этот браузер" : o.text.split(" — ")[0]) : "";
+    store.set("sp_dev", name);
+    $("devHint").textContent = name ? `Музыка будет играть: ${o.text.replace(" • сейчас играет", "")}` : "";
+  };
 
   const q = new URLSearchParams(location.search);
   if (q.get("code") || q.get("error")) {
