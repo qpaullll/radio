@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Моё радио">
+<title>Моё радио</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff4d6d'/%3E%3Cstop offset='1' stop-color='%23ff9f43'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='34' r='9' fill='none' stroke='white' stroke-width='5'/%3E%3Cpath d='M16 20a22 22 0 0 1 32 0M10 13a31 31 0 0 1 44 0' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23ff4d6d'/%3E%3Ccircle cx='32' cy='34' r='9' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0e0b16; --card:#17131f; --card2:#201a2b; --line:#2c2438;
+    --text:#f4f0fa; --muted:#a59cb5; --accent:#ff4d6d; --accent2:#ff9f43;
+    --spotify:#1ed760; --yt:#ff3d3d; --sc:#ff7a1a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{min-height:100vh;background:
+    radial-gradient(900px 500px at 85% -10%, rgba(255,77,109,.18), transparent 60%),
+    radial-gradient(700px 400px at -10% 10%, rgba(255,159,67,.10), transparent 60%), var(--bg)}
+  .wrap{max-width:560px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
+  header{display:flex;gap:14px;align-items:center;margin:4px 2px 18px}
+  .logo{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px rgba(255,77,109,.35)}
+  .logo svg{width:28px;height:28px}
+  h1{font-size:22px;margin:0;letter-spacing:-.01em}
+  .sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
+  h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=text],select{width:100%;min-width:0;background:var(--card2);color:var(--text);border:1px solid var(--line);
+    border-radius:12px;padding:12px 12px;font-size:16px;outline:none}
+  input[type=text]:focus,select:focus{border-color:var(--accent)}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  .btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:600;
+    padding:12px 16px;border-radius:12px;white-space:nowrap}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:var(--card2);border:1px solid var(--line);color:var(--text);font-weight:500}
+  .btn.spotify{background:var(--spotify);color:#0b0b0b}
+  .btn.small{padding:10px 12px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--card2);color:var(--muted);border:1px solid var(--line);transition:.2s}
+  .chip.on.spotify{color:#0b0b0b;background:var(--spotify);border-color:var(--spotify)}
+  .chip.on.youtube{color:#fff;background:var(--yt);border-color:var(--yt)}
+  .chip.on.soundcloud{color:#fff;background:var(--sc);border-color:var(--sc)}
+  .muted{color:var(--muted);font-size:14px}
+  .info{margin-top:10px;font-size:14px;color:var(--muted);min-height:1em}
+  .warn{color:#ffcf7a}
+  .auth{margin-top:12px;padding:12px;border-radius:14px;background:rgba(30,215,96,.08);border:1px solid rgba(30,215,96,.25)}
+  .auth p{margin:0 0 10px;font-size:14px}
+  .np{display:flex;gap:14px;align-items:center}
+  .art{width:92px;height:92px;border-radius:14px;object-fit:cover;flex:none;background:var(--card2);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .meta{min-width:0}
+  .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);font-weight:700}
+  .title{font-size:19px;font-weight:700;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .artist{color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar{height:5px;background:var(--card2);border-radius:5px;margin-top:16px;overflow:hidden}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .9s linear}
+  .times{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+  .controls{display:flex;justify-content:center;align-items:center;gap:22px;margin:14px 0 6px}
+  .cbtn{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--card2);border:1px solid var(--line)}
+  .cbtn svg{width:22px;height:22px;fill:var(--text)}
+  .cbtn.big{width:72px;height:72px;border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 28px rgba(255,77,109,.4)}
+  .cbtn.big svg{width:30px;height:30px;fill:#fff}
+  .cbtn:disabled{opacity:.4}
+  .seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:4px;margin-top:12px}
+  .seg button{flex:1;padding:10px;border-radius:10px;color:var(--muted);font-weight:600;font-size:15px}
+  .seg button.on{background:var(--text);color:var(--bg)}
+  .onair{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);font-size:14px}
+  .onair b{color:var(--accent)}
+  .upnext{margin-top:10px}
+  .embed{margin-top:14px;border-radius:14px;overflow:hidden;background:#000}
+  .embed.yt{aspect-ratio:16/9}
+  .embed.yt iframe,.embed.yt>div{width:100%;height:100%;display:block}
+  .embed.sc iframe{width:100%;height:166px;border:0;display:block}
+  .field{margin-top:14px}
+  .field:first-of-type{margin-top:0}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .status{min-height:1.2em;font-size:14px;margin:6px 4px 0;color:#ffcf7a}
+  .status.ok{color:#8ce99a}
+  details{margin-top:4px}
+  summary{cursor:pointer;color:var(--muted);font-size:14px}
+  details p,details li{font-size:14px;color:var(--muted)}
+  .link{color:var(--muted);text-decoration:underline;font-size:13px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="3.2"/><path d="M6.5 8.5a8 8 0 0 1 11 0M3.8 5.6a12 12 0 0 1 16.4 0"/></svg></div>
+    <div>
+      <h1>Моё радио</h1>
+      <p class="sub">Вставь ссылку на плейлист — ведущий сделает остальное</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <label for="link">Ссылка на плейлист</label>
+    <div class="row">
+      <input id="link" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false"
+             placeholder="Вставь ссылку сюда">
+      <button id="loadBtn" class="btn">Загрузить</button>
+    </div>
+    <div class="chips">
+      <span class="chip spotify" data-src="spotify">Spotify</span>
+      <span class="chip youtube" data-src="youtube">YouTube / YouTube Music</span>
+      <span class="chip soundcloud" data-src="soundcloud">SoundCloud</span>
+    </div>
+    <div id="spAuth" class="auth" hidden>
+      <p>Чтобы играть плейлист из Spotify, войди в свой аккаунт (нужен Premium).</p>
+      <button id="spLoginBtn" class="btn spotify">Войти через Spotify</button>
+    </div>
+    <div id="loadInfo" class="info"></div>
+  </section>
+
+  <section id="playerCard" class="card" hidden>
+    <div class="np">
+      <img id="art" class="art" alt="">
+      <div class="meta">
+        <div id="kicker" class="kicker">Готово к эфиру</div>
+        <div id="npTitle" class="title"></div>
+        <div id="npArtist" class="artist"></div>
+      </div>
+    </div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="times"><span id="tPos">0:00</span><span id="tCount"></span><span id="tDur">0:00</span></div>
+
+    <div class="controls">
+      <button id="stopBtn" class="cbtn" title="Стоп" aria-label="Стоп">
+        <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <button id="playBtn" class="cbtn big" title="Старт" aria-label="Старт">
+        <svg id="icPlay" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+        <svg id="icPause" viewBox="0 0 24 24" hidden><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg>
+      </button>
+      <button id="nextBtn" class="cbtn" title="Следующий трек" aria-label="Следующий трек">
+        <svg viewBox="0 0 24 24"><path d="M5.5 6l9 6-9 6zM16 6h2.5v12H16z"/></svg>
+      </button>
+    </div>
+
+    <div class="seg" id="modeSeg">
+      <button data-mode="order">По очереди</button>
+      <button data-mode="shuffle">Вразброс</button>
+    </div>
+
+    <div id="onair" class="onair" hidden><b>В эфире ведущий:</b> <span id="onairText"></span></div>
+    <div id="upNext" class="upnext muted"></div>
+
+    <div id="spDevBox" class="field" hidden>
+      <label for="spDevice">Где играть музыку Spotify</label>
+      <div class="row">
+        <select id="spDevice"></select>
+        <button id="devRefresh" class="btn ghost small" title="Обновить список">↻</button>
+      </div>
+      <p id="devHint" class="hint"></p>
+    </div>
+
+    <div id="ytBox" class="embed yt" hidden><div id="yt"></div></div>
+    <div id="scBox" class="embed sc" hidden></div>
+  </section>
+
+  <section class="card">
+    <h2>Ведущий</h2>
+    <div class="field">
+      <label for="voice">Голос</label>
+      <div class="row">
+        <select id="voice"></select>
+        <button id="testVoice" class="btn ghost small">Прослушать</button>
+      </div>
+      <p id="voiceHint" class="hint"></p>
+    </div>
+    <div class="field">
+      <label for="rate">Скорость речи: <span id="rateVal"></span></label>
+      <input id="rate" type="range" min="0.7" max="1.4" step="0.05">
+    </div>
+    <div class="field">
+      <label for="talkEvery">Разговорные паузы</label>
+      <select id="talkEvery">
+        <option value="3">Каждые 3 трека</option>
+        <option value="4">Каждые 4 трека</option>
+        <option value="6">Каждые 6 треков</option>
+        <option value="0">Без лишней болтовни</option>
+      </select>
+    </div>
+  </section>
+
+  <p id="status" class="status"></p>
+
+  <section class="card">
+    <details>
+      <summary>Подсказки</summary>
+      <ul>
+        <li><b>Телефон:</b> держи эту страницу открытой — экран не будет гаснуть, пока играет радио. Если свернуть браузер, ведущий замолчит.</li>
+        <li><b>Spotify на телефоне:</b> сначала открой приложение Spotify и включи любой трек на пару секунд — тогда телефон появится в списке устройств.</li>
+        <li><b>Spotify:</b> читаются только плейлисты, которые ты создал сам или где ты соавтор (ограничение Spotify).</li>
+        <li><b>YouTube:</b> плеер берёт до 200 видео из плейлиста; видео, которые запрещено встраивать, пропускаются. На iPhone иногда нужно один раз нажать ▶ в самом видео.</li>
+        <li><b>Живой голос бесплатно:</b> на компьютере открой сайт в Microsoft Edge и выбери голос с пометкой «Online (Natural)». На iPhone: Настройки → Универсальный доступ → Устный контент → Голоса → Русский → скачай улучшенный голос.</li>
+      </ul>
+      <p><button id="spLogout" class="link" hidden>Выйти из Spotify</button></p>
+    </details>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* ================== НАСТРОЙКИ ================== */
+const CLIENT_ID = "96a3f70de514431aa04bc087672155a3";
+const REDIRECT_URI = location.origin + location.pathname;
+const SP_SCOPES = [
+  "playlist-read-private", "playlist-read-collaborative",
+  "user-read-playback-state", "user-modify-playback-state",
+  "streaming", "user-read-email", "user-read-private",
+].join(" ");
+
+/* ================== УТИЛИТЫ ================== */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("radio_" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("radio_" + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem("radio_" + k); } catch {} },
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => o[k] ?? "");
+const mmss = ms => { if (!ms || ms < 0) ms = 0; const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = src; s.async = true;
+    s.onload = res; s.onerror = () => rej(new Error("не загрузился " + src));
+    document.head.appendChild(s);
+  });
+}
+function status(msg, ok = false) { const el = $("status"); el.textContent = msg || ""; el.classList.toggle("ok", ok); }
+function info(msg, warn = false) { const el = $("loadInfo"); el.textContent = msg || ""; el.classList.toggle("warn", warn); }
+async function sleepUnless(ms, stop) { const end = Date.now() + ms; while (Date.now() < end) { if (stop()) return; await sleep(Math.min(250, end - Date.now())); } }
+
+const PLACEHOLDER_ART = "data:image/svg+xml," + encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff4d6d'/><stop offset='1' stop-color='#ff9f43'/></linearGradient></defs><rect width='100' height='100' fill='url(#g)'/><circle cx='50' cy='55' r='12' fill='none' stroke='white' stroke-width='6'/><path d='M28 36a31 31 0 0 1 44 0M18 25a45 45 0 0 1 64 0' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/></svg>");
+
+/* ================== ТЕКСТЫ ВЕДУЩЕГО ================== */
+const HELLO = [
+  "Привет! В эфире радио по вашему плейлисту «{playlist}». Устраивайтесь поудобнее, начинаем.",
+  "Добрый день! Это ваше личное радио, и сегодня в эфире плейлист «{playlist}». Поехали!",
+  "Привет-привет! С вами ваше радио. Сегодня звучит «{playlist}». Включаем!",
+];
+const BACK = [
+  "Это был {artist} — «{name}».",
+  "Только что прозвучал трек «{name}», {artist}.",
+  "{artist}, «{name}». Хорошая вещь.",
+];
+const BACK_NOART = ["Это был трек «{name}».", "Только что прозвучал «{name}»."];
+const INTRO = [
+  "Дальше в эфире — {artist}, трек «{name}».",
+  "А сейчас — {artist} с песней «{name}».",
+  "Слушаем: «{name}». Исполняет {artist}.",
+  "Следующий трек — «{name}», {artist}.",
+];
+const INTRO_NOART = ["Дальше в эфире — «{name}».", "А сейчас звучит «{name}»."];
+const INTRO_UNKNOWN = ["А теперь — следующий трек.", "Слушаем дальше.", "Продолжаем эфир."];
+const CHAT = [
+  "Вы слушаете радио по вашему личному плейлисту. Никакой рекламы, только ваша музыка.",
+  "Если вы только что подключились — добро пожаловать, тут у нас хорошая музыка.",
+  "Небольшая пауза, чтобы перевести дух. И продолжаем.",
+  "Самое время сделать погромче. Сейчас будет повод.",
+];
+const BYE = "Это был последний трек в плейлисте. Спасибо, что слушали! До встречи в эфире.";
+
+function cleanTitle(t) {
+  if (!t) return "";
+  let s = t.replace(/\s*[\(\[][^\)\]]*(remaster|feat|ft\.|with |version|edit|mix|live|official|video|audio|lyric|clip|клип|prod|hd|4k|mv|visualizer|explicit|премьера|premiere)[^\)\]]*[\)\]]/gi, "");
+  s = s.split(/\s+[-–—]\s+/)[0];
+  s = s.replace(/\s{2,}/g, " ").trim();
+  return s || t.trim();
+}
+function parseVideoTitle(title, channel) {
+  let t = (title || "").replace(/\s*[\(\[][^\)\]]*(official|video|audio|lyric|clip|клип|hd|4k|mv|visualizer|премьера|premiere)[^\)\]]*[\)\]]/gi, "")
+    .replace(/\s*\|.*$/, "").trim();
+  let artist = (channel || "").replace(/\s*-\s*Topic$/i, "").replace(/VEVO$/i, "").replace(/\s*(Official|Music)\b.*$/i, "").trim();
+  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if (m) { artist = m[1].trim(); t = m[2]; }
+  return { artist, title: cleanTitle(t) || t };
+}
+const artistsText = a => (a || []).filter(Boolean).slice(0, 2).join(" и ");
+function factLine(t) {
+  const album = cleanTitle(t.album || "");
+  if (album && t.albumType === "album" && album.toLowerCase() !== cleanTitle(t.title).toLowerCase())
+    return `Трек с альбома «${album}»` + (t.year ? ` ${t.year} года.` : ".");
+  if (t.year) return `Песня вышла в ${t.year} году.`;
+  return "";
+}
+function hostLine(n, t, prev, talkEvery) {
+  const parts = [];
+  if (prev && prev.title && Math.random() < 0.6) {
+    const a = artistsText(prev.artists);
+    parts.push(a ? fmt(pick(BACK), { name: cleanTitle(prev.title), artist: a })
+                 : fmt(pick(BACK_NOART), { name: cleanTitle(prev.title) }));
+  }
+  if (talkEvery && n > 1 && (n - 1) % talkEvery === 0) parts.push(pick(CHAT));
+  if (t.title) {
+    const a = artistsText(t.artists);
+    parts.push(a ? fmt(pick(INTRO), { name: cleanTitle(t.title), artist: a })
+                 : fmt(pick(INTRO_NOART), { name: cleanTitle(t.title) }));
+    const f = factLine(t);
+    if (f && Math.random() < 0.6) parts.push(f);
+  } else parts.push(pick(INTRO_UNKNOWN));
+  return parts.join(" ");
+}
+
+/* ================== РАСПОЗНАВАНИЕ ССЫЛОК ================== */
+function detect(raw) {
+  raw = (raw || "").trim();
+  if (!raw) return null;
+  const uri = raw.match(/^spotify:(playlist|album):([A-Za-z0-9]+)$/);
+  if (uri) return { type: "spotify", kind: uri[1], id: uri[2] };
+  let u;
+  try { u = new URL(/^https?:\/\//i.test(raw) ? raw : "https://" + raw); } catch { return null; }
+  const h = u.hostname.toLowerCase().replace(/^(www|m)\./, "");
+  if (h === "open.spotify.com") {
+    const m = u.pathname.match(/\/(playlist|album)\/([A-Za-z0-9]+)/);
+    return m ? { type: "spotify", kind: m[1], id: m[2] } : { type: "spotify", bad: true };
+  }
+  if (h === "spotify.link" || h.endsWith("app.link")) return { type: "spotify", bad: true, short: true };
+  if (["youtube.com", "music.youtube.com", "youtu.be", "youtube-nocookie.com"].includes(h)) {
+    const list = u.searchParams.get("list");
+    let video = u.searchParams.get("v");
+    if (h === "youtu.be") video = u.pathname.slice(1).split("/")[0];
+    if (!video) { const m = u.pathname.match(/\/(shorts|embed|live)\/([\w-]{6,})/); if (m) video = m[2]; }
+    if (list) return { type: "youtube", list };
+    if (video) return { type: "youtube", video };
+    return null;
+  }
+  if (h === "soundcloud.com" || h === "on.soundcloud.com")
+    return { type: "soundcloud", url: h === "on.soundcloud.com" ? raw : "https://soundcloud.com" + u.pathname };
+  if (h === "music.apple.com" || h === "itunes.apple.com") return { type: "apple" };
+  return null;
+}
+
+/* ================== ГОЛОС ВЕДУЩЕГО ================== */
+const settings = {
+  mode: store.get("mode", "order"),
+  voice: store.get("voice", ""),
+  rate: store.get("rate", 1.05),
+  talkEvery: store.get("talkEvery", 4),
+};
+let voices = [];
+let currentUtterance = null;
+function voiceScore(v) {
+  let s = 0;
+  if (/^ru/i.test(v.lang)) s += 100;
+  if (/natural|online|neural|premium|enhanced|улучш/i.test(v.name)) s += 20;
+  if (/google/i.test(v.name)) s += 10;
+  if (/milena|svetlana|dariya|katya|irina/i.test(v.name)) s += 3;
+  return s;
+}
+function populateVoices() {
+  if (!("speechSynthesis" in window)) { $("voiceHint").textContent = "Этот браузер не умеет говорить. Попробуй Chrome, Edge или Safari."; return; }
+  voices = speechSynthesis.getVoices();
+  const sel = $("voice");
+  sel.innerHTML = "";
+  const groups = [
+    ["Русские", voices.filter(v => /^ru/i.test(v.lang))],
+    ["Украинские", voices.filter(v => /^uk/i.test(v.lang))],
+    ["Другие языки", voices.filter(v => !/^(ru|uk)/i.test(v.lang))],
+  ];
+  for (const [label, list] of groups) {
+    if (!list.length) continue;
+    const og = document.createElement("optgroup"); og.label = label;
+    list.sort((a, b) => voiceScore(b) - voiceScore(a)).forEach(v => og.appendChild(new Option(`${v.name} (${v.lang})`, v.name)));
+    sel.appendChild(og);
+  }
+  const best = [...voices].sort((a, b) => voiceScore(b) - voiceScore(a))[0];
+  const chosen = voices.find(v => v.name === settings.voice) || best;
+  if (chosen) sel.value = chosen.name;
+  const hasRu = voices.some(v => /^ru/i.test(v.lang));
+  $("voiceHint").textContent = !voices.length ? "Голоса ещё загружаются…" :
+    hasRu ? "Голоса берутся из твоего устройства. Самые живые обычно с пометкой Natural, Online или «улучшенный»."
+          : "На этом устройстве нет русского голоса — ведущий будет говорить с акцентом. Подсказка внизу страницы.";
+}
+function speak(text) {
+  return new Promise(resolve => {
+    if (!text || !("speechSynthesis" in window)) return resolve();
+    $("onair").hidden = false; $("onairText").textContent = text;
+    const u = new SpeechSynthesisUtterance(text);
+    const v = voices.find(v => v.name === $("voice").value);
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "ru-RU";
+    u.rate = +settings.rate || 1;
+    let done = false;
+    const finish = () => { if (done) return; done = true; clearTimeout(timer); $("onair").hidden = true; resolve(); };
+    const timer = setTimeout(finish, 5000 + text.length * 140 / (u.rate || 1));
+    u.onend = finish; u.onerror = finish;
+    currentUtterance = u; // иначе Chrome может «потерять» фразу
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ================== SPOTIFY ================== */
+function b64url(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+const SP = {
+  token: store.get("sp_token", null),
+  player: null, sdkDevice: null, sdkLoading: false,
+
+  async login() {
+    const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+    const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+    store.set("pkce", verifier);
+    const p = new URLSearchParams({
+      client_id: CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI,
+      code_challenge_method: "S256", code_challenge: challenge, scope: SP_SCOPES,
+    });
+    location.href = "https://accounts.spotify.com/authorize?" + p;
+  },
+  async tokenRequest(params) {
+    const r = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(params),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error_description || j.error || ("HTTP " + r.status));
+    this.token = {
+      access_token: j.access_token,
+      refresh_token: j.refresh_token || this.token?.refresh_token,
+      expires_at: Date.now() + (j.expires_in || 3600) * 1000,
+    };
+    store.set("sp_token", this.token);
+  },
+  async exchange(code) {
+    await this.tokenRequest({ client_id: CLIENT_ID, grant_type: "authorization_code", code,
+      redirect_uri: REDIRECT_URI, code_verifier: store.get("pkce", "") });
+    store.del("pkce");
+  },
+  async refresh() {
+    if (!this.token?.refresh_token) throw new Error("нужно войти в Spotify заново");
+    try { await this.tokenRequest({ client_id: CLIENT_ID, grant_type: "refresh_token", refresh_token: this.token.refresh_token }); }
+    catch (e) { this.logout(); throw new Error("сессия Spotify истекла — войди заново"); }
+  },
+  logout() { this.token = null; store.del("sp_token"); updateAuthUI(); },
+  async getToken() {
+    if (!this.token) throw new Error("нужно войти в Spotify");
+    if (Date.now() > this.token.expires_at - 60000) await this.refresh();
+    return this.token.access_token;
+  },
+  async api(path, { method = "GET", body } = {}) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const tok = await this.getToken();
+      const url = path.startsWith("http") ? path : "https://api.spotify.com/v1" + path;
+      const r = await fetch(url, {
+        method, body: body ? JSON.stringify(body) : undefined,
+        headers: { Authorization: "Bearer " + tok, ...(body ? { "Content-Type": "application/json" } : {}) },
+      });
+      if (r.status === 401 && attempt === 0) { await this.refresh(); continue; }
+      if (r.status === 429) { await sleep((+r.headers.get("Retry-After") || 3) * 1000); continue; }
+      if (r.status === 204 || r.status === 202) return null;
+      const txt = await r.text();
+      let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
+      if (!r.ok) {
+        const e = new Error(j?.error?.message || ("HTTP " + r.status));
+        e.status = r.status; e.reason = j?.error?.reason; throw e;
+      }
+      return j;
+    }
+    throw new Error("Spotify сейчас не отвечает, попробуй позже");
+  },
+  norm(t, album) {
+    const al = album || t.album || {};
+    const imgs = al.images || [];
+    const img = (imgs.find(i => i.width && i.width <= 320) || imgs[0] || {}).url;
+    return { source: "spotify", ref: t.uri, title: t.name, artists: (t.artists || []).map(a => a.name),
+      album: al.name, albumType: al.album_type, year: (al.release_date || "").slice(0, 4), art: img, duration: t.duration_ms };
+  },
+  async load(src) {
+    const out = [];
+    let name = "Spotify";
+    if (src.kind === "playlist") {
+      try { const meta = await this.api(`/playlists/${src.id}?fields=name`); if (meta?.name) name = meta.name; } catch {}
+      let next = `/playlists/${src.id}/items?limit=50`;
+      while (next) {
+        let page;
+        try { page = await this.api(next); }
+        catch (e) {
+          if (e.status === 403 || e.status === 404)
+            throw new Error("Spotify не отдал треки этого плейлиста. Spotify разрешает читать только плейлисты, которые ты создал сам или где ты соавтор. Скопируй треки в свой плейлист и вставь ссылку на него.");
+          throw e;
+        }
+        for (const e of page?.items || []) {
+          const t = e.item || e.track;
+          if (t && typeof t.uri === "string" && t.uri.startsWith("spotify:track:")) out.push(this.norm(t));
+        }
+        next = page?.next || null;
+        info(`Загружаю треки… ${out.length}`);
+      }
+    } else {
+      const al = await this.api(`/albums/${src.id}`);
+      name = al.name;
+      let next = `/albums/${src.id}/tracks?limit=50`;
+      while (next) {
+        const page = await this.api(next);
+        for (const t of page?.items || []) if (t?.uri?.startsWith("spotify:track:")) out.push(this.norm(t, al));
+        next = page?.next || null;
+      }
+    }
+    return { name, tracks: out };
+  },
+  initSdk() {
+    if (isMobile || this.sdkLoading) return;
+    this.sdkLoading = true;
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const p = new Spotify.Player({
+        name: "Моё радио (браузер)", volume: 0.85,
+        getOAuthToken: cb => this.getToken().then(cb).catch(() => {}),
+      });
+      p.addListener("ready", ({ device_id }) => { this.sdkDevice = device_id; refreshDevices(); });
+      p.addListener("not_ready", () => { this.sdkDevice = null; });
+      p.addListener("initialization_error", () => { $("devHint").textContent = "Этот браузер не умеет играть Spotify сам — выбери приложение Spotify в списке."; });
+      p.addListener("authentication_error", () => { $("devHint").textContent = "Плеер в браузере не подключился. Проверь, что в Spotify Dashboard у приложения включён Web Playback SDK, и войди заново."; });
+      p.addListener("account_error", () => { $("devHint").textContent = "Для музыки в браузере нужен Spotify Premium."; });
+      p.connect();
+      this.player = p;
+    };
+    loadScript("https://sdk.scdn.co/spotify-player.js").catch(() => {});
+  },
+  deviceId() { return $("spDevice").value; },
+  async play(t) {
+    const dev = this.deviceId();
+    if (!dev) { const e = new Error(isMobile ? "Открой приложение Spotify, включи любой трек на пару секунд и нажми ↻ рядом со списком устройств." : "Выбери, где играть музыку Spotify (список под кнопками)."); e.fatal = true; throw e; }
+    for (let i = 0; i < 2; i++) {
+      try { await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT", body: { uris: [t.ref] } }); return; }
+      catch (e) {
+        if (e.status === 404 && i === 0) { await sleep(1500); continue; }
+        if (e.status === 404) { const er = new Error("Spotify не нашёл устройство. Открой Spotify на нём и нажми ↻."); er.fatal = true; throw er; }
+        if (e.status === 403) { const er = new Error("Spotify не разрешил воспроизведение (нужен Premium)."); er.fatal = true; throw er; }
+        throw e;
+      }
+    }
+  },
+  async pause() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/pause?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
+  async resume() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
+  async waitEnd(t, stop) {
+    await sleepUnless(1500, stop);
+    let playingId = null, maxPos = 0, misses = 0;
+    while (!stop()) {
+      let pb = null;
+      try { pb = await this.api("/me/player"); } catch { await sleepUnless(1500, stop); continue; }
+      if (!pb || !pb.item) {
+        if (playingId || ++misses > 8) return;
+        await sleepUnless(1000, stop); continue;
+      }
+      const item = pb.item;
+      if (playingId === null) playingId = item.id;
+      else if (item.id !== playingId) return;            // переключили вручную
+      const dur = item.duration_ms, pos = pb.progress_ms || 0;
+      setProgress(pos, dur);
+      if (pos + 2000 < maxPos) return;                    // доиграл и откатился в начало
+      if (!pb.is_playing && maxPos >= dur - 5000) return; // доиграл и остановился
+      maxPos = Math.max(maxPos, pos);
+      const left = dur - pos;
+      if (pb.is_playing && left <= 3000) { await sleepUnless(Math.max(0, left - 300), stop); return; }
+      await sleepUnless(1000, stop);
+    }
+  },
+};
+async function refreshDevices() {
+  if (!SP.token) return;
+  const sel = $("spDevice");
+  let list = [];
+  try { list = (await SP.api("/me/player/devices"))?.devices || []; } catch {}
+  const opts = [];
+  if (SP.sdkDevice) opts.push({ id: SP.sdkDevice, name: "Этот браузер" });
+  for (const d of list) if (d.id && d.id !== SP.sdkDevice) opts.push({ id: d.id, name: d.name, active: d.is_active });
+  const prevName = store.get("sp_dev", "");
+  sel.innerHTML = "";
+  for (const o of opts) sel.add(new Option(o.name + (o.active ? " • сейчас играет" : ""), o.id));
+  const byName = opts.find(o => o.name === prevName);
+  const choice = byName || opts.find(o => o.active) || opts[0];
+  if (choice) sel.value = choice.id;
+  $("devHint").textContent = opts.length ? "" : (isMobile
+    ? "Открой приложение Spotify, включи любой трек на пару секунд, вернись сюда и нажми ↻."
+    : "Плеер в браузере загружается… Или открой приложение Spotify и нажми ↻.");
+}
+
+/* ================== YOUTUBE ================== */
+async function oembed(url) {
+  const tries = [
+    "https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(url),
+    "https://noembed.com/embed?url=" + encodeURIComponent(url),
+  ];
+  for (const t of tries) {
+    try { const r = await fetch(t); if (r.ok) { const j = await r.json(); if (j && j.title) return j; } } catch {}
+  }
+  return null;
+}
+const YTA = {
+  player: null, ready: null, state: -1, listeners: new Set(), ticker: null,
+  ensure() {
+    if (this.ready) return this.ready;
+    this.ready = new Promise((res, rej) => {
+      window.onYouTubeIframeAPIReady = () => {
+        this.player = new YT.Player("yt", {
+          width: "100%", height: "100%",
+          playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+          events: {
+            onReady: () => res(),
+            onStateChange: e => { this.state = e.data; this.listeners.forEach(f => f("state", e.data)); },
+            onError: e => this.listeners.forEach(f => f("error", e.data)),
+          },
+        });
+      };
+      loadScript("https://www.youtube.com/iframe_api").catch(() => rej(new Error("YouTube не загрузился")));
+    });
+    return this.ready;
+  },
+  waitFor(pred, ms) {
+    return new Promise(res => {
+      const f = (type, v) => { if (pred(type, v)) { clearTimeout(timer); this.listeners.delete(f); res({ type, v }); } };
+      const timer = setTimeout(() => { this.listeners.delete(f); res(null); }, ms);
+      this.listeners.add(f);
+    });
+  },
+  async load(src) {
+    $("ytBox").hidden = false;
+    await this.ensure();
+    let ids = [];
+    let name = "YouTube";
+    if (src.list) {
+      this.player.cuePlaylist({ listType: "playlist", list: src.list });
+      for (let i = 0; i < 60 && !ids.length; i++) { await sleep(250); const p = this.player.getPlaylist?.(); if (p && p.length) ids = p.slice(); }
+      if (!ids.length) throw new Error("YouTube не отдал этот плейлист. Проверь, что он открытый или доступен по ссылке.");
+      const meta = await oembed("https://www.youtube.com/playlist?list=" + src.list);
+      if (meta?.title) name = meta.title;
+    } else {
+      ids = [src.video];
+      const meta = await oembed("https://www.youtube.com/watch?v=" + src.video);
+      if (meta?.title) name = meta.title;
+    }
+    return { name, tracks: ids.map(id => ({ source: "youtube", ref: id, title: null, artists: [], art: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` })) };
+  },
+  async prepare(t) {
+    if (t.title) return;
+    const meta = await oembed("https://www.youtube.com/watch?v=" + t.ref);
+    if (meta) { const p = parseVideoTitle(meta.title, meta.author_name); t.title = p.title; t.artists = p.artist ? [p.artist] : []; }
+  },
+  async play(t) {
+    this.player.loadVideoById(t.ref);
+    const r = await this.waitFor((type, v) => type === "error" || (type === "state" && v === YT.PlayerState.PLAYING), 8000);
+    if (r?.type === "error") throw new Error("видео нельзя проиграть на сайте (запрет на встраивание или удалено)");
+    if (!r) status("Если видео не запустилось само — нажми ▶ прямо в видео.");
+    if (!t.title) {
+      const d = this.player.getVideoData?.();
+      if (d?.title) { const p = parseVideoTitle(d.title, d.author); t.title = p.title; t.artists = p.artist ? [p.artist] : []; }
+    }
+  },
+  async waitEnd(t, stop) {
+    let ended = false, failed = false;
+    const f = (type, v) => { if (type === "state" && v === YT.PlayerState.ENDED) ended = true; if (type === "error") failed = true; };
+    this.listeners.add(f);
+    try {
+      while (!stop() && !ended && !failed) {
+        try { setProgress(this.player.getCurrentTime() * 1000, this.player.getDuration() * 1000); } catch {}
+        await sleep(500);
+      }
+    } finally { this.listeners.delete(f); }
+  },
+  async pause() { try { this.player?.pauseVideo(); } catch {} },
+  async resume() { try { this.player?.playVideo(); } catch {} },
+};
+
+/* ================== SOUNDCLOUD ================== */
+const SCA = {
+  widget: null, finished: false, dur: 0, single: false,
+  norm(s, i) {
+    const pm = s.publisher_metadata || {};
+    let title = s.title || null, artist = pm.artist || s.user?.username || "";
+    if (title && !pm.artist) { const p = parseVideoTitle(title, artist); title = p.title; artist = p.artist; }
+    else if (title) title = cleanTitle(title);
+    const art = (s.artwork_url || s.user?.avatar_url || "").replace("-large", "-t300x300");
+    return { source: "soundcloud", ref: i, title, artists: artist ? [artist] : [], album: pm.album_title,
+      year: (pm.release_date || "").slice(0, 4), art: art || null, duration: s.duration };
+  },
+  async load(src) {
+    if (!window.SC?.Widget) await loadScript("https://w.soundcloud.com/player/api.js");
+    const box = $("scBox"); box.hidden = false; box.innerHTML = "";
+    const ifr = document.createElement("iframe");
+    ifr.allow = "autoplay";
+    ifr.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(src.url) +
+      "&auto_play=false&visual=false&show_comments=false&hide_related=true&buying=false&sharing=false&download=false&show_teaser=false";
+    box.appendChild(ifr);
+    const w = SC.Widget(ifr); this.widget = w;
+    await new Promise((res, rej) => {
+      const timer = setTimeout(() => rej(new Error("SoundCloud не ответил. Нужна полная ссылка soundcloud.com/…, а плейлист должен быть открытым.")), 20000);
+      w.bind(SC.Widget.Events.READY, () => { clearTimeout(timer); res(); });
+    });
+    const E = SC.Widget.Events;
+    w.bind(E.FINISH, () => { this.finished = true; w.pause(); });
+    w.bind(E.PLAY_PROGRESS, e => setProgress(e.currentPosition, this.dur));
+    w.bind(E.PLAY, () => w.getDuration(d => { this.dur = d; }));
+    const sounds = await new Promise(r => w.getSounds(r));
+    if (!sounds || !sounds.length) throw new Error("В этом плейлисте SoundCloud нет доступных треков.");
+    this.single = sounds.length === 1;
+    const slug = decodeURIComponent((src.url.split("?")[0].split("/").filter(Boolean).pop() || "SoundCloud")).replace(/[-_]+/g, " ");
+    return { name: this.single ? (sounds[0].title || slug) : slug, tracks: sounds.map((s, i) => this.norm(s, i)) };
+  },
+  async play(t) {
+    this.finished = false;
+    if (this.single) { this.widget.seekTo(0); this.widget.play(); } else this.widget.skip(t.ref);
+    await sleep(1200);
+    const s = await new Promise(r => this.widget.getCurrentSound(r));
+    if (s && !t.title) Object.assign(t, this.norm(s, t.ref));
+  },
+  async waitEnd(t, stop) { while (!stop() && !this.finished) await sleep(400); },
+  async pause() { try { this.widget?.pause(); } catch {} },
+  async resume() { try { this.widget?.play(); } catch {} },
+};
+
+/* ================== РАДИО ================== */
+const S = { adapter: null, name: "", tracks: [], queue: [], played: new Set(), current: -1,
+  prev: null, count: 0, session: 0, running: false, paused: false, skip: false, inTrack: false };
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && "wakeLock" in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener?.("release", () => { wakeLock = null; }); }
+    else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch {}
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && S.running) keepAwake(true); });
+
+function setProgress(pos, dur) {
+  $("barFill").style.width = dur ? Math.min(100, pos / dur * 100) + "%" : "0";
+  $("tPos").textContent = mmss(pos); $("tDur").textContent = mmss(dur);
+}
+function buildQueue() {
+  const rest = S.tracks.map((_, i) => i).filter(i => !S.played.has(i) && !(S.running && i === S.current));
+  S.queue = settings.mode === "shuffle" ? shuffle(rest) : rest;
+  updateUpNext();
+}
+function trackLabel(t) {
+  if (!t) return "";
+  const a = artistsText(t.artists);
+  return t.title ? (a ? `${a} — ${t.title}` : t.title) : "следующий трек";
+}
+function updateUpNext() {
+  const n = S.tracks[S.queue[0]];
+  $("upNext").textContent = n ? "Дальше: " + trackLabel(n) : (S.tracks.length ? "Это последний трек" : "");
+}
+function showTrack(t, kicker) {
+  $("kicker").textContent = kicker;
+  $("npTitle").textContent = t ? (t.title || "Загружаю название…") : S.name;
+  $("npArtist").textContent = t ? artistsText(t.artists) : `${S.tracks.length} треков`;
+  $("art").src = (t && t.art) || PLACEHOLDER_ART;
+  $("tCount").textContent = t ? `${S.played.size + 1} из ${S.tracks.length}` : "";
+}
+function updateButtons() {
+  const playing = S.running && !S.paused;
+  $("icPlay").hidden = playing; $("icPause").hidden = !playing;
+  $("playBtn").title = playing ? "Пауза" : "Старт";
+  $("nextBtn").disabled = !S.running; $("stopBtn").disabled = !S.running;
+}
+async function waitWhilePaused(stop) { while (S.paused && !stop()) await sleep(250); }
+
+async function runRadio(my) {
+  const stop = () => my !== S.session;
+  const hello = speak(fmt(pick(HELLO), { playlist: S.name })); // запускаем в момент нажатия — так браузер разрешает звук
+  S.adapter.pause?.();
+  await hello;
+  while (!stop() && S.queue.length) {
+    const idx = S.queue.shift(); const t = S.tracks[idx]; S.current = idx; S.skip = false;
+    try { await S.adapter.prepare?.(t); } catch {}
+    showTrack(t, "Ведущий в эфире"); updateUpNext();
+    S.count++;
+    await waitWhilePaused(stop);
+    if (stop()) break;
+    await speak(hostLine(S.count, t, S.prev, +settings.talkEvery));
+    await waitWhilePaused(stop);
+    if (stop()) break;
+    try { await S.adapter.play(t); }
+    catch (e) {
+      S.played.add(idx);
+      if (e.fatal) { status(e.message); stopRadio(); return; }
+      status(`Пропускаю «${t.title || "трек"}»: ${e.message}`);
+      continue;
+    }
+    showTrack(t, "Сейчас звучит"); updateUpNext();
+    S.inTrack = true;
+    await S.adapter.waitEnd(t, () => stop() || S.skip);
+    S.inTrack = false;
+    S.played.add(idx);
+    if (stop()) break;
+    await S.adapter.pause?.();
+    S.prev = t;
+  }
+  if (!stop()) {
+    await speak(BYE);
+    S.running = false; S.paused = false; updateButtons(); keepAwake(false);
+    showTrack(null, "Эфир окончен");
+  }
+}
+function startRadio() {
+  if (!S.tracks.length || !S.adapter) return;
+  if (!S.queue.length) { S.played.clear(); S.count = 0; S.prev = null; buildQueue(); }
+  if (S.adapter === SP) SP.player?.activateElement?.().catch?.(() => {});
+  S.running = true; S.paused = false; updateButtons(); status("");
+  keepAwake(true);
+  runRadio(++S.session);
+}
+function stopRadio() {
+  S.session++; S.running = false; S.paused = false; S.inTrack = false;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  $("onair").hidden = true;
+  S.adapter?.pause?.();
+  updateButtons(); keepAwake(false);
+  if (S.current >= 0 && !S.played.has(S.current)) S.queue.unshift(S.current);
+  updateUpNext();
+}
+async function togglePause() {
+  if (!S.running) return startRadio();
+  S.paused = !S.paused; updateButtons();
+  if (S.paused) {
+    if ("speechSynthesis" in window && speechSynthesis.speaking) speechSynthesis.pause();
+    if (S.inTrack) await S.adapter.pause?.();
+  } else {
+    if ("speechSynthesis" in window && speechSynthesis.paused) speechSynthesis.resume();
+    if (S.inTrack) await S.adapter.resume?.();
+  }
+}
+function nextTrack() {
+  if (!S.running) return;
+  S.paused = false; updateButtons();
+  S.skip = true;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+async function loadLink() {
+  const raw = $("link").value.trim();
+  store.set("link", raw);
+  const src = detect(raw);
+  highlightChip(src?.type);
+  if (!src) { info("Не узнал ссылку. Нужна ссылка на плейлист Spotify, YouTube или SoundCloud.", true); return; }
+  if (src.type === "apple") { info("Apple Music, к сожалению, не поддерживается: Apple не даёт сайтам играть свою музыку без платной подписки разработчика.", true); return; }
+  if (src.bad) { info(src.short ? "Это короткая ссылка Spotify. Открой её в браузере и скопируй полную ссылку open.spotify.com/playlist/…" : "Нужна ссылка именно на плейлист или альбом Spotify.", true); return; }
+
+  stopRadio();
+  Object.assign(S, { adapter: null, name: "", tracks: [], queue: [], played: new Set(), current: -1, prev: null, count: 0 });
+  $("ytBox").hidden = true; $("scBox").hidden = true; $("scBox").innerHTML = ""; $("spDevBox").hidden = true;
+  YTA.pause();
+
+  if (src.type === "spotify") {
+    if (!SP.token) { $("spAuth").hidden = false; info("Чтобы играть Spotify, войди в аккаунт — кнопка выше."); return; }
+    S.adapter = SP; SP.initSdk(); $("spDevBox").hidden = false; refreshDevices();
+  } else if (src.type === "youtube") S.adapter = YTA;
+  else S.adapter = SCA;
+
+  $("loadBtn").disabled = true;
+  info("Загружаю плейлист…");
+  try {
+    const res = await S.adapter.load(src);
+    if (!res.tracks.length) throw new Error("в плейлисте не нашлось треков, которые можно проиграть");
+    S.name = res.name; S.tracks = res.tracks;
+    buildQueue();
+    $("playerCard").hidden = false;
+    showTrack(null, "Готово к эфиру");
+    setProgress(0, 0);
+    info(`«${S.name}»: ${S.tracks.length} треков. Жми ▶`);
+    status("");
+  } catch (e) {
+    info("Не получилось: " + e.message, true);
+  } finally { $("loadBtn").disabled = false; }
+}
+function highlightChip(type) { document.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.src === type)); }
+function updateAuthUI() {
+  const src = detect($("link").value);
+  $("spAuth").hidden = !!SP.token || src?.type !== "spotify";
+  $("spLogout").hidden = !SP.token;
+}
+function setMode(m) {
+  settings.mode = m; store.set("mode", m);
+  document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  if (S.tracks.length) buildQueue();
+}
+
+/* ================== ЗАПУСК СТРАНИЦЫ ================== */
+(async function init() {
+  $("link").value = store.get("link", "");
+  setMode(settings.mode);
+  $("rate").value = settings.rate; $("rateVal").textContent = (+settings.rate).toFixed(2) + "×";
+  $("talkEvery").value = String(settings.talkEvery);
+  $("art").src = PLACEHOLDER_ART;
+  if ("speechSynthesis" in window) { populateVoices(); speechSynthesis.onvoiceschanged = populateVoices; } else populateVoices();
+
+  $("loadBtn").onclick = loadLink;
+  $("link").addEventListener("keydown", e => { if (e.key === "Enter") loadLink(); });
+  $("link").addEventListener("input", () => { highlightChip(detect($("link").value)?.type); updateAuthUI(); });
+  $("spLoginBtn").onclick = () => { store.set("link", $("link").value.trim()); SP.login(); };
+  $("spLogout").onclick = () => { SP.logout(); status("Ты вышел из Spotify."); };
+  $("playBtn").onclick = togglePause;
+  $("nextBtn").onclick = nextTrack;
+  $("stopBtn").onclick = stopRadio;
+  document.querySelectorAll("#modeSeg button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  $("voice").onchange = () => { settings.voice = $("voice").value; store.set("voice", settings.voice); };
+  $("rate").oninput = () => { settings.rate = +$("rate").value; store.set("rate", settings.rate); $("rateVal").textContent = settings.rate.toFixed(2) + "×"; };
+  $("talkEvery").onchange = () => { settings.talkEvery = +$("talkEvery").value; store.set("talkEvery", settings.talkEvery); };
+  $("testVoice").onclick = () => speak("Привет! Это ваше радио. Дальше в эфире — Банд'Эрос, трек «Коламбия Пикчерз не представляет».");
+  $("devRefresh").onclick = refreshDevices;
+  $("spDevice").onchange = () => store.set("sp_dev", $("spDevice").selectedOptions[0]?.text.replace(" • сейчас играет", "") || "");
+
+  const q = new URLSearchParams(location.search);
+  if (q.get("code") || q.get("error")) {
+    history.replaceState(null, "", REDIRECT_URI);
+    if (q.get("code")) {
+      try { await SP.exchange(q.get("code")); status("Spotify подключён ✓", true); }
+      catch (e) { status("Не удалось войти в Spotify: " + e.message); }
+    } else status("Вход в Spotify отменён.");
+  }
+  updateAuthUI();
+  highlightChip(detect($("link").value)?.type);
+  if ($("link").value && (detect($("link").value)?.type !== "spotify" || SP.token)) loadLink();
+})();
+</script>
+</body>
+</html>
