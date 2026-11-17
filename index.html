@@ -289,7 +289,12 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const store = {
   get(k, d) { try { const v = localStorage.getItem("radio_" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("radio_" + k, JSON.stringify(v)); } catch {} },
+  set(k, v) {
+    try { localStorage.setItem("radio_" + k, JSON.stringify(v)); }
+    catch { // место кончилось — выкидываем старые сохранённые плейлисты и пробуем ещё раз
+      try { Object.keys(localStorage).filter(x => x.startsWith("radio_pl_")).forEach(x => localStorage.removeItem(x)); localStorage.setItem("radio_" + k, JSON.stringify(v)); } catch {}
+    }
+  },
   del(k) { try { localStorage.removeItem("radio_" + k); } catch {} },
 };
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -631,7 +636,8 @@ const SP = {
     return this.token.access_token;
   },
   async api(path, { method = "GET", body } = {}) {
-    for (let attempt = 0; attempt < 4; attempt++) {
+    let waited429 = 0;
+    for (let attempt = 0; attempt < 5; attempt++) {
       const tok = await this.getToken();
       const url = path.startsWith("http") ? path : "https://api.spotify.com/v1" + path;
       const r = await fetch(url, {
@@ -639,7 +645,17 @@ const SP = {
         headers: { Authorization: "Bearer " + tok, ...(body ? { "Content-Type": "application/json" } : {}) },
       });
       if (r.status === 401 && attempt === 0) { await this.refresh(); continue; }
-      if (r.status === 429) { await sleep((+r.headers.get("Retry-After") || 3) * 1000); continue; }
+      if (r.status === 429) {
+        // Spotify ограничивает частоту запросов. Ждём сколько попросит (или всё дольше) и пробуем снова
+        const sec = Math.min(30, +r.headers.get("Retry-After") || [5, 10, 20, 30, 30][attempt]);
+        waited429 += sec;
+        if (attempt === 4) break;
+        const prev = $("loadInfo").textContent;
+        info(`Spotify просит подождать — слишком много запросов. Пробую снова через ${sec} с…`, true);
+        await sleep(sec * 1000);
+        if ($("loadInfo").textContent.startsWith("Spotify просит подождать")) info(prev);
+        continue;
+      }
       if (r.status === 204 || r.status === 202) return null;
       const txt = await r.text();
       let j = null; try { j = txt ? JSON.parse(txt) : null; } catch {}
@@ -649,7 +665,10 @@ const SP = {
       }
       return j;
     }
-    throw new Error("Spotify сейчас не отвечает, попробуй позже");
+    const e = new Error(waited429
+      ? "Spotify временно ограничил запросы от сайта (слишком много за короткое время). Подожди 5–10 минут и попробуй снова — лимит снимется сам."
+      : "Spotify сейчас не отвечает, попробуй позже");
+    e.status = waited429 ? 429 : 0; throw e;
   },
   norm(t, album) {
     const al = album || t.album || {};
@@ -658,11 +677,22 @@ const SP = {
     return { source: "spotify", ref: t.uri, title: t.name, artists: (t.artists || []).map(a => a.name),
       album: al.name, albumType: al.album_type, year: (al.release_date || "").slice(0, 4), art: img, duration: t.duration_ms };
   },
+  packTracks(list) { return list.map(t => [t.ref, t.title, t.artists, t.album || "", t.albumType || "", t.year || "", t.art || "", t.duration || 0]); },
+  unpackTracks(list) { return list.map(([ref, title, artists, album, albumType, year, art, duration]) => ({ source: "spotify", ref, title, artists, album, albumType, year, art, duration })); },
   async load(src) {
     const out = [];
     let name = "Spotify";
     if (src.kind === "playlist") {
-      try { const meta = await this.api(`/playlists/${src.id}?fields=name`); if (meta?.name) name = meta.name; } catch {}
+      const cacheKey = "pl_" + src.id;
+      const cached = store.get(cacheKey, null);
+      let meta = null;
+      try { meta = await this.api(`/playlists/${src.id}?fields=name,snapshot_id`); if (meta?.name) name = meta.name; }
+      catch (e) { if (!cached) throw e; }
+      // плейлист не менялся с прошлого раза (или Spotify сейчас не отвечает) — берём сохранённый список
+      if (cached && (!meta || (meta.snapshot_id && meta.snapshot_id === cached.snap))) {
+        info("Плейлист уже загружен раньше — беру сохранённый список");
+        return { name: cached.name || name, tracks: this.unpackTracks(cached.tracks) };
+      }
       let next = `/playlists/${src.id}/items?limit=50`;
       while (next) {
         let page;
@@ -679,6 +709,7 @@ const SP = {
         next = page?.next || null;
         info(`Загружаю треки… ${out.length}`);
       }
+      try { store.set(cacheKey, { snap: meta?.snapshot_id || "", name, tracks: this.packTracks(out) }); } catch {}
     } else {
       const al = await this.api(`/albums/${src.id}`);
       name = al.name;
@@ -734,8 +765,8 @@ const SP = {
     }
   },
   async verify(t) {
-    for (let i = 0; i < 6; i++) {
-      await sleep(1000);
+    for (let i = 0; i < 4; i++) {
+      await sleep(1500);
       let pb = null; try { pb = await this.api("/me/player"); } catch {}
       if (pb?.is_playing && pb.item) return true;
     }
@@ -744,28 +775,55 @@ const SP = {
   async pause() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/pause?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
   async resume() { const dev = this.deviceId(); if (!dev) return; try { await this.api(`/me/player/play?device_id=${encodeURIComponent(dev)}`, { method: "PUT" }); } catch {} },
   async waitEnd(t, stop) {
-    await sleepUnless(1500, stop);
-    let playingId = null, maxPos = 0, misses = 0;
-    while (!stop()) {
-      let pb = null;
-      try { pb = await this.api("/me/player"); } catch { await sleepUnless(1500, stop); continue; }
-      if (!pb || !pb.item) {
-        if (playingId || ++misses > 8) return;
-        await sleepUnless(1000, stop); continue;
+    // Музыка играет в этом браузере — спрашиваем плеер напрямую, без запросов к Spotify
+    if (this.player && this.deviceId() === this.sdkDevice) {
+      await sleepUnless(1500, stop);
+      let maxPos = 0, startUri = null;
+      while (!stop()) {
+        const st = await this.player.getCurrentState().catch(() => null);
+        if (!st) { await sleepUnless(1000, stop); continue; }
+        const cur = st.track_window?.current_track; const uri = cur?.uri || cur?.id;
+        if (!startUri) startUri = uri; else if (uri !== startUri) return;
+        const pos = st.position || 0, dur = st.duration || cur?.duration_ms || 0;
+        setProgress(pos, dur);
+        if (pos + 2000 < maxPos) return;
+        if (st.paused && maxPos >= dur - 5000) return;
+        maxPos = Math.max(maxPos, pos);
+        const left = dur - pos;
+        if (!st.paused && left <= 3000) { await sleepUnless(Math.max(0, left - 300), stop); return; }
+        await sleepUnless(1000, stop);
       }
-      const item = pb.item;
-      if (playingId === null) playingId = item.id;
-      else if (item.id !== playingId) return;            // переключили вручную
-      const dur = item.duration_ms, pos = pb.progress_ms || 0;
-      setProgress(pos, dur);
-      if (pos + 2000 < maxPos) return;                    // доиграл и откатился в начало
-      if (!pb.is_playing && maxPos >= dur - 5000) return; // доиграл и остановился
-      maxPos = Math.max(maxPos, pos);
-      const left = dur - pos;
-      if (pb.is_playing && left <= 3000) { await sleepUnless(Math.max(0, left - 300), stop); return; }
-      await sleepUnless(1000, stop);
+      return;
     }
+    // Другое устройство: спрашиваем Spotify редко, а ближе к концу трека — каждую секунду
+    await sleepUnless(1500, stop);
+    let playingId = null, maxPos = 0, misses = 0, base = null;
+    const tick = setInterval(() => { if (base && base.playing) setProgress(base.pos + (Date.now() - base.at), base.dur); }, 1000);
+    try {
+      while (!stop()) {
+        let pb = null;
+        try { pb = await this.api("/me/player"); } catch { await sleepUnless(5000, stop); continue; }
+        if (!pb || !pb.item) {
+          if (playingId || ++misses > 8) return;
+          await sleepUnless(1500, stop); continue;
+        }
+        const item = pb.item;
+        if (playingId === null) playingId = item.id;
+        else if (item.id !== playingId) return;            // переключили вручную
+        const dur = item.duration_ms, pos = pb.progress_ms || 0;
+        base = { pos, dur, at: Date.now(), playing: !!pb.is_playing };
+        setProgress(pos, dur);
+        if (pos + 2000 < maxPos) return;                    // доиграл и откатился в начало
+        if (!pb.is_playing && maxPos >= dur - 5000) return; // доиграл и остановился
+        maxPos = Math.max(maxPos, pos);
+        const left = dur - pos;
+        if (pb.is_playing && left <= 3000) { await sleepUnless(Math.max(0, left - 300), stop); return; }
+        const nap = pb.is_playing ? Math.max(1000, Math.min(10000, left - 12000)) : 3000;
+        await sleepUnless(nap, stop);
+      }
+    } finally { clearInterval(tick); }
   },
+
 };
 const DEV_TYPE = { computer: "компьютер", smartphone: "телефон", tablet: "планшет", speaker: "колонка", tv: "телевизор", avr: "ресивер", stb: "приставка", audiodongle: "Chromecast", gameconsole: "консоль", castvideo: "Chromecast", castaudio: "Chromecast", automobile: "машина" };
 async function refreshDevices() {
